@@ -34,7 +34,7 @@ Un script PHP independiente y protegido por contraseña para generar informes de
 
 1.  **Clona o descarga el repositorio:**
     ```bash
-    git clone [https://github.com/tu-usuario/tu-repositorio.git](https://github.com/tu-usuario/tu-repositorio.git)
+    git clone [https://github.com/RLMLLC/ps_statistics-main.git]
     ```
     O descarga el ZIP y descomprímelo.
 
