@@ -2,7 +2,6 @@
 
 Un script PHP independiente y protegido por contraseña para generar informes de ventas avanzados directamente desde una base de datos de PrestaShop. Esta herramienta está diseñada como una solución rápida y potente para administradores que necesitan acceso a datos de ventas complejos sin depender de módulos o software externo.
 
-!
 
 ## 🚀 Características Principales
 
@@ -50,7 +49,7 @@ Un script PHP independiente y protegido por contraseña para generar informes de
 
 ```bash
 # Clona el repositorio en tu máquina local
-git clone [https://github.com/RLMLLC/ps_statistics-main.git](https://github.com/RLMLLC/ps_statistics-main.git)
+git clone https://github.com/RLMLLC/ps_statistics-main.git
 
 # Sube la carpeta a tu servidor y sigue los pasos 3 y 4 de la instalación normal.
 ```
