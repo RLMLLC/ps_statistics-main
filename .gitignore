@@ -1,0 +1,42 @@
+# # Archivo .gitignore para un proyecto PHP #
+
+# --- Dependencias ---
+# Ignorar la carpeta de dependencias de Composer.
+# Esta carpeta se genera automáticamente con "composer install".
+# /vendor
+
+# Ignorar la carpeta de dependencias de Node/NPM, si se usa.
+/node_modules
+
+# --- Archivos de Entorno ---
+# Los archivos .env contienen contraseñas y claves secretas y NUNCA
+# deben subirse a un repositorio público.
+.env
+.env.local
+.env.production
+.env.development
+.env.testing
+
+# --- Archivos de Log ---
+# Los logs pueden contener información sensible y crecer mucho en tamaño.
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- Archivos de Sistema Operativo y Editores ---
+# Archivos autogenerados por macOS, Windows y Linux.
+.DS_Store
+Thumbs.db
+._*
+
+# Archivos de configuración de editores de código populares.
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# --- Otros ---
+# No subir el binario de composer si se descarga en el proyecto.
+composer.phar

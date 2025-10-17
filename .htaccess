@@ -1,0 +1,28 @@
+# === Archivo de Configuración de Seguridad para el Generador de Informes ===
+
+# --- 1. Proteger el propio archivo .htaccess
+<Files .htaccess>
+    Require all denied
+</Files>
+<FilesMatch "^(\.htaccess)$">
+    Require all denied
+</FilesMatch>
+
+# --- 2. Deshabilitar el listado de archivos en el directorio
+Options -Indexes
+
+# --- 3. Bloquear el acceso a archivos y carpetas sensibles
+# Redirige cualquier intento de acceso a la carpeta /vendor/ a un error 403 Prohibido.
+RedirectMatch 403 ^/vendor/.*$
+# Bloquea el acceso a composer.json y composer.lock
+<FilesMatch "^(composer\.(json|lock))$">
+    Require all denied
+</FilesMatch>
+
+# --- 4. (OPCIONAL - MÁXIMA SEGURIDAD) Restringir por IP
+# Descomenta las siguientes líneas (quitando el #) y añade tu IP para usar esta regla.
+# Si no lo haces, el acceso no estará restringido por IP.
+#
+# Require all denied
+# Require ip TU.IP.PUBLICA.AQUI
+# Require ip OTRA.IP.SI.ES.NECESARIO
