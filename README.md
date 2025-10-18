@@ -1,7 +1,11 @@
+[Español](#español) | [English](#english)
+
+<a name="español"></a>
+## 🇪🇸 Español
+
 # Generador de Informes de Ventas para PrestaShop v1.01
 
 Un script PHP independiente y protegido por contraseña para generar informes de ventas avanzados directamente desde una base de datos de PrestaShop. Esta herramienta está diseñada como una solución rápida y potente para administradores que necesitan acceso a datos de ventas complejos sin depender de módulos o software externo.
-
 
 ## 🚀 Características Principales
 
@@ -34,14 +38,11 @@ Un script PHP independiente y protegido por contraseña para generar informes de
 
 1.  **Descarga el Proyecto:**
     * Descarga la última versión directamente desde este enlace: **[Descargar ZIP](https://github.com/RLMLLC/ps_statistics-main/archive/refs/heads/main.zip)**.
-
 2.  **Sube los Archivos a tu Servidor:**
     * Descomprime el archivo `.zip` en tu ordenador.
     * Usando un cliente FTP (como FileZilla) o el Administrador de Archivos de tu hosting, sube la carpeta completa del proyecto a un directorio en tu servidor web (por ejemplo, dentro de `public_html/informes/`).
-
 3.  **Configura el script `index.php`:**
     * Abre el archivo `index.php` y modifica las constantes de configuración en la parte superior con los datos de tu base de datos de PrestaShop y una contraseña segura.
-
 4.  **(Recomendado) Revisa el archivo `.htaccess`:**
     * Para una seguridad extra, puedes abrir el archivo `.htaccess` y configurar la restricción por IP descomentando las líneas correspondientes y añadiendo tu dirección IP.
 
@@ -49,7 +50,7 @@ Un script PHP independiente y protegido por contraseña para generar informes de
 
 ```bash
 # Clona el repositorio en tu máquina local
-git clone https://github.com/RLMLLC/ps_statistics-main.git
+git clone [https://github.com/RLMLLC/ps_statistics-main.git](https://github.com/RLMLLC/ps_statistics-main.git)
 
 # Sube la carpeta a tu servidor y sigue los pasos 3 y 4 de la instalación normal.
 ```
@@ -80,3 +81,87 @@ Las contribuciones para mejorar esta herramienta son bienvenidas. Por favor, abr
 Este proyecto ha sido desarrollado por **Red, Light & Magic Consulting, LLC** ([rlm.llc](https://rlm.llc)).
 
 El código está disponible bajo la **Licencia MIT**. Consulta el archivo `LICENSE` para más detalles.
+
+---
+
+<a name="english"></a>
+## 🇬🇧 English
+
+# PrestaShop Sales Report Generator v1.01
+
+A standalone, password-protected PHP script to generate advanced sales reports directly from a PrestaShop database. This tool is designed as a fast and powerful solution for administrators who need access to complex sales data without relying on external modules or software.
+
+## 🚀 Key Features
+
+* **Secure Access**: Protected by a unique password and enhanced with an `.htaccess` file to block access to sensitive files.
+* **Enhanced Interface**:
+    * A single form to select the report type, date range, and format.
+    * **Quick Date Shortcuts**: Buttons to automatically fill in common date ranges (Today, Yesterday, Current month, Last year, etc.).
+    * **Logout Function**: A link to securely end the session.
+* **Detailed & Flexible Reports**:
+    * **General Sales Report**: Based on **invoice** dates, includes invoice number, customer VAT ID, and a **final row with totals** for amounts and profits.
+    * **Sales by Customer Report**: Generates a main list with totals per customer and a **separate report with the Top 10** most valuable customers.
+    * **Sales by Brand Report**: Generates a detailed list by product and a **separate report with a summary of totals** (cost, sale price, profit) for each brand.
+* **Advanced Exports (XLSX & CSV)**:
+    * **Excel (XLSX)**: Complex reports are generated in a single `.xlsx` file with **multiple, conveniently named sheets** (e.g., "Report" and "Top 10").
+    * **CSV**: For reports with multiple tables, the script generates a single **`.zip`** file containing the separate `.csv` files for easy management.
+* **Super Simple Installation**: No Composer or command-line access required for the end-user. Simply upload to a directory on the server and configure the credentials in a single file.
+
+---
+
+## 📋 Requirements
+
+* Web server with **PHP 7.4** or higher (with the `zip` extension enabled).
+* Read access to the PrestaShop database.
+
+---
+
+## 🛠️ Installation
+
+### Method 1: Direct Download (Recommended)
+
+1.  **Download the Project:**
+    * Download the latest version directly from this link: **[Download ZIP](https://github.com/RLMLLC/ps_statistics-main/archive/refs/heads/main.zip)**.
+2.  **Upload the Files to Your Server:**
+    * Unzip the `.zip` file on your computer.
+    * Using an FTP client (like FileZilla) or your hosting's File Manager, upload the entire project folder to a directory on your web server (e.g., inside `public_html/reports/`).
+3.  **Configure the `index.php` script:**
+    * Open the `index.php` file and modify the configuration constants at the top with your PrestaShop database details and a secure password.
+4.  **(Recommended) Review the `.htaccess` file:**
+    * For extra security, you can open the `.htaccess` file and configure IP restriction by uncommenting the corresponding lines and adding your IP address.
+
+### Method 2: Git Clone (For Developers)
+
+```bash
+# Clone the repository to your local machine
+git clone [https://github.com/RLMLLC/ps_statistics-main.git](https://github.com/RLMLLC/ps_statistics-main.git)
+
+# Upload the folder to your server and follow steps 3 and 4 of the normal installation.
+```
+
+---
+
+## 💻 Usage
+
+1.  **Access the script** through your browser (e.g., `https://www.yourstore.com/reports/`).
+2.  **Enter the password** you defined in the configuration.
+3.  **Fill out the form**:
+    * Select the **report type**.
+    * Use the **shortcut buttons** or manually select a date range.
+    * Select the **output format** (XLSX or CSV).
+4.  Click **"Generate Report"**. The download of the `.xlsx` or `.zip` file will start automatically.
+5.  Use the **"Log Out"** link when you are finished.
+
+---
+
+## 🤝 Contributions
+
+Contributions to improve this tool are welcome. Please open an issue to discuss changes or submit a pull request.
+
+---
+
+## ✍️ Author and License
+
+This project was developed by **Red, Light & Magic Consulting, LLC** ([rlm.llc](https://rlm.llc)).
+
+The code is available under the **MIT License**. See the `LICENSE` file for more details.
