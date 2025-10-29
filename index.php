@@ -46,6 +46,18 @@ if (isset($_POST['generate_report'])) {
     exit;
 }
 
+// --- OBTENER PROVEEDORES PARA EL FORMULARIO ---
+$suppliers = [];
+try {
+    $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8", DB_USER, DB_PASS);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $stmt = $pdo->prepare("SELECT id_supplier, name FROM " . DB_PREFIX . "supplier WHERE active = 1 ORDER BY name ASC");
+    $stmt->execute();
+    $suppliers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    // El desplegable de proveedores aparecerá vacío si hay un error
+}
+
 // --- 4. HTML: FORMULARIO PARA PEDIR LOS DATOS ---
 ?>
 <!DOCTYPE html>
@@ -59,7 +71,7 @@ if (isset($_POST['generate_report'])) {
         h1 { text-align: center; margin-bottom: 5px; }
         .version { text-align: center; margin-top: 0; margin-bottom: 20px; color: #888; font-size: 0.9em; }
         label { display: block; width: 100%; margin-bottom: 8px; font-weight: bold; }
-        select, input[type="date"] { display: block; width: 100%; margin-bottom: 15px; box-sizing: border-box; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        select, input[type="date"], input[type="number"] { display: block; width: 100%; margin-bottom: 15px; box-sizing: border-box; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
         input[type="submit"] { background-color: #007bff; color: white; border: none; padding: 12px 20px; cursor: pointer; width: 100%; border-radius: 4px; font-size: 16px; margin-top: 10px; }
         input[type="submit"]:hover { background-color: #0056b3; }
         .date-shortcuts { margin-bottom: 20px; text-align: center; }
@@ -70,13 +82,13 @@ if (isset($_POST['generate_report'])) {
         footer { text-align: center; margin-top: 30px; font-size: 12px; color: #aaa; }
         footer a { color: #aaa; text-decoration: none; }
         footer a:hover { text-decoration: underline; }
+        .dynamic-field { display: none; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Generador de Informes</h1>
-        <p class="version">v1.01</p>
-        <p>Tienda: <strong><?php echo SHOP_NAME; ?></strong></p>
+        <p class="version">v1.03b</p> <p>Tienda: <strong><?php echo SHOP_NAME; ?></strong></p>
         
         <form method="post" action="">
             <label for="report_type">1. Selecciona el tipo de informe:</label>
@@ -84,27 +96,47 @@ if (isset($_POST['generate_report'])) {
                 <option value="brand">Informe de Ventas por Marca</option>
                 <option value="general">Informe de Ventas General</option>
                 <option value="customer">Informe de Ventas por Cliente</option>
+                <option value="supplier">Productos por Proveedor</option>
+                <option value="low_stock">Informe de Existencias Bajas</option>
             </select>
 
-            <label>2. Selecciona un rango de fechas:</label>
-            <div class="date-shortcuts">
-                <button type="button" data-period="today">Hoy</button>
-                <button type="button" data-period="yesterday">Ayer</button>
-                <button type="button" data-period="this_week">Esta semana</button>
-                <button type="button" data-period="last_7_days">Últimos 7 días</button>
-                <button type="button" data-period="this_month">Mes actual</button>
-                <button type="button" data-period="last_month">Mes anterior</button>
-                <button type="button" data-period="this_year">Año actual</button>
-                <button type="button" data-period="last_year">Año anterior</button>
+            <div id="supplier-selector" class="dynamic-field">
+                <label for="supplier_id">2. Selecciona un Proveedor:</label>
+                <select name="supplier_id" id="supplier_id">
+                    <?php foreach ($suppliers as $supplier): ?>
+                        <option value="<?php echo htmlspecialchars($supplier['id_supplier']); ?>">
+                            <?php echo htmlspecialchars($supplier['name']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
             </div>
-            
-            <label for="start_date">Fecha de Inicio:</label>
-            <input type="date" name="start_date" id="start_date" required>
 
-            <label for="end_date">Fecha de Fin:</label>
-            <input type="date" name="end_date" id="end_date" required>
+            <div id="stock-threshold-selector" class="dynamic-field">
+                <label for="stock_threshold">2. Umbral de Stock:</label>
+                <input type="number" name="stock_threshold" id="stock_threshold" value="5" min="0" step="1">
+            </div>
 
-            <label for="output_format">3. Formato de Salida:</label>
+            <div id="date-range-selector" class="dynamic-field">
+                <label>2. Selecciona un rango de fechas:</label>
+                <div class="date-shortcuts">
+                    <button type="button" data-period="today">Hoy</button>
+                    <button type="button" data-period="yesterday">Ayer</button>
+                    <button type="button" data-period="this_week">Esta semana</button>
+                    <button type="button" data-period="last_7_days">Últimos 7 días</button>
+                    <button type="button" data-period="this_month">Mes actual</button>
+                    <button type="button" data-period="last_month">Mes anterior</button>
+                    <button type="button" data-period="this_year">Año actual</button>
+                    <button type="button" data-period="last_year">Año anterior</button>
+                </div>
+                
+                <label for="start_date">Fecha de Inicio:</label>
+                <input type="date" name="start_date" id="start_date">
+
+                <label for="end_date">Fecha de Fin:</label>
+                <input type="date" name="end_date" id="end_date">
+            </div>
+
+            <label for="output_format" id="output_format_label">3. Formato de Salida:</label>
             <select name="output_format" id="output_format" required>
                 <option value="csv">CSV (Comprimido en .ZIP)</option>
                 <option value="xlsx">XLSX (Excel Moderno)</option>
@@ -122,22 +154,60 @@ if (isset($_POST['generate_report'])) {
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const reportTypeSelect = document.getElementById('report_type');
+    const supplierSelector = document.getElementById('supplier-selector');
+    const stockThresholdSelector = document.getElementById('stock-threshold-selector');
+    const dateRangeSelector = document.getElementById('date-range-selector');
+    
+    const outputFormatLabel = document.getElementById('output_format_label');
     const startDateInput = document.getElementById('start_date');
     const endDateInput = document.getElementById('end_date');
+    const supplierInput = document.getElementById('supplier_id');
+    const stockThresholdInput = document.getElementById('stock_threshold');
+
+    function toggleFormFields() {
+        const selectedReport = reportTypeSelect.value;
+        
+        supplierSelector.style.display = 'none';
+        stockThresholdSelector.style.display = 'none';
+        dateRangeSelector.style.display = 'none';
+
+        startDateInput.required = false;
+        endDateInput.required = false;
+        supplierInput.required = false;
+        stockThresholdInput.required = false;
+
+        if (selectedReport === 'supplier') {
+            supplierSelector.style.display = 'block';
+            supplierInput.required = true;
+            outputFormatLabel.textContent = '3. Formato de Salida:';
+        } 
+        else if (selectedReport === 'low_stock') {
+            stockThresholdSelector.style.display = 'block';
+            stockThresholdInput.required = true;
+            outputFormatLabel.textContent = '3. Formato de Salida:';
+        } 
+        else {
+            dateRangeSelector.style.display = 'block';
+            startDateInput.required = true;
+            endDateInput.required = true;
+            dateRangeSelector.querySelector('label').textContent = '2. Selecciona un rango de fechas:';
+            outputFormatLabel.textContent = '3. Formato de Salida:';
+        }
+    }
+    
+    reportTypeSelect.addEventListener('change', toggleFormFields);
+    toggleFormFields(); 
 
     const setDates = (start, end) => {
         startDateInput.value = start.toISOString().slice(0, 10);
         endDateInput.value = end.toISOString().slice(0, 10);
     };
-
     document.querySelectorAll('.date-shortcuts button').forEach(button => {
         button.addEventListener('click', function () {
             const period = this.getAttribute('data-period');
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            let start = new Date(today);
-            let end = new Date(today);
-
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            let start = new Date(today); let end = new Date(today);
             switch (period) {
                 case 'today': break;
                 case 'yesterday': start.setDate(start.getDate() - 1); end.setDate(end.getDate() - 1); break;
@@ -168,12 +238,22 @@ function generateCsvContent($reportHeader, $headers, $data, $totals = null) {
     
     fputcsv($handle, ['Tienda:', $reportHeader['shop_name']]);
     fputcsv($handle, ['Informe:', $reportHeader['report_name']]);
-    fputcsv($handle, ['Desde:', $reportHeader['start_date']]);
-    fputcsv($handle, ['Hasta:', $reportHeader['end_date']]);
+    if (isset($reportHeader['start_date'])) {
+        fputcsv($handle, ['Desde:', $reportHeader['start_date']]);
+        fputcsv($handle, ['Hasta:', $reportHeader['end_date']]);
+    }
+    if (isset($reportHeader['stock_threshold'])) {
+        fputcsv($handle, ['Umbral de Stock:', '<= ' . $reportHeader['stock_threshold']]);
+    }
     fputcsv($handle, []);
     fputcsv($handle, $headers);
     foreach ($data as $row) {
-        fputcsv($handle, $row);
+        // Asegurarse de que el orden de las columnas sea el esperado por los headers
+        $ordered_row = [];
+        foreach($headers as $header_key => $header_name){
+             $ordered_row[] = $row[$header_name] ?? ''; // Usar el nombre del header como clave
+        }
+        fputcsv($handle, $ordered_row);
     }
     if ($totals) {
         fputcsv($handle, $totals);
@@ -193,22 +273,23 @@ function exportToCsv($reportType, $reportHeader, $mainHeaders, $mainData, $optio
         exit("Cannot create zip file");
     }
 
-    // Main report file
     $mainTotals = $options['totals'] ?? null;
     $mainCsvContent = generateCsvContent($reportHeader, $mainHeaders, $mainData, $mainTotals);
     $zip->addFromString('informe.csv', $mainCsvContent);
 
-    // Secondary report file
     if ($reportType === 'customer' && !empty($options['top_customers'])) {
         $top10Headers = ['ID Cliente', 'Nombre', 'Total Comprado'];
-        $top10CsvContent = generateCsvContent($reportHeader, $top10Headers, $options['top_customers']);
+        // Asegurar que los datos para top_customers tengan el formato correcto
+         $topCustomersFormatted = array_map(function($c){ return [$c[0], $c[1], $c[2]]; }, $options['top_customers']);
+        $top10CsvContent = generateCsvContent($reportHeader, $top10Headers, $topCustomersFormatted);
         $zip->addFromString('top_10_clientes.csv', $top10CsvContent);
     }
     if ($reportType === 'brand' && !empty($options['brand_summary'])) {
         $summaryHeaders = ['Marca', 'Total Coste', 'Total Venta (s/IVA)', 'Total Venta (c/IVA)', 'Total Beneficio'];
         $summaryData = [];
         foreach($options['brand_summary'] as $brand => $summary) {
-            $summaryData[] = array_merge([$brand], $summary);
+            // Asegurar el orden correcto de las columnas
+             $summaryData[] = [$brand, $summary['cost'], $summary['sale_excl'], $summary['sale_incl'], $summary['profit']];
         }
         $summaryCsvContent = generateCsvContent($reportHeader, $summaryHeaders, $summaryData);
         $zip->addFromString('totales_por_marca.csv', $summaryCsvContent);
@@ -227,32 +308,49 @@ function exportToXlsx($reportType, $reportHeader, $mainHeaders, $mainData, $opti
     $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
     $sheet = $spreadsheet->getActiveSheet();
     $sheet->setTitle('Informe');
+    $currentRow = 6; 
 
-    // Main Sheet Header
     $sheet->setCellValue('A1', 'Tienda:')->getStyle('A1')->getFont()->setBold(true);
     $sheet->setCellValue('B1', $reportHeader['shop_name']);
     $sheet->setCellValue('A2', 'Informe:')->getStyle('A2')->getFont()->setBold(true);
     $sheet->setCellValue('B2', $reportHeader['report_name']);
-    $sheet->setCellValue('A3', 'Desde:')->getStyle('A3')->getFont()->setBold(true);
-    $sheet->setCellValue('B3', $reportHeader['start_date']);
-    $sheet->setCellValue('A4', 'Hasta:')->getStyle('A4')->getFont()->setBold(true);
-    $sheet->setCellValue('B4', $reportHeader['end_date']);
     
-    // Main Sheet Data
-    $sheet->fromArray($mainHeaders, null, 'A6');
-    $sheet->getStyle('A6:' . $sheet->getHighestColumn() . '6')->getFont()->setBold(true);
-    $sheet->fromArray($mainData, null, 'A7');
-    $currentRow = 7 + count($mainData);
+    if (isset($reportHeader['start_date'])) {
+        $sheet->setCellValue('A3', 'Desde:')->getStyle('A3')->getFont()->setBold(true);
+        $sheet->setCellValue('B3', $reportHeader['start_date']);
+        $sheet->setCellValue('A4', 'Hasta:')->getStyle('A4')->getFont()->setBold(true);
+        $sheet->setCellValue('B4', $reportHeader['end_date']);
+    }
+    if (isset($reportHeader['stock_threshold'])) {
+        $sheet->setCellValue('A3', 'Umbral de Stock:')->getStyle('A3')->getFont()->setBold(true);
+        $sheet->setCellValue('B3', '<= ' . $reportHeader['stock_threshold']);
+    }
+    
+    // Escribir cabeceras
+    $sheet->fromArray($mainHeaders, null, 'A'.$currentRow);
+    $sheet->getStyle('A'.$currentRow.':' . \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($mainHeaders)) . $currentRow)->getFont()->setBold(true);
+    $currentRow++;
+    
+    // Escribir datos asegurando el orden
+     foreach($mainData as $dataRow) {
+        $orderedRow = [];
+        foreach($mainHeaders as $header) {
+            $orderedRow[] = $dataRow[$header] ?? '';
+        }
+        $sheet->fromArray($orderedRow, null, 'A'.$currentRow, true);
+        $currentRow++;
+    }
+    //$sheet->fromArray($mainData, null, 'A'.$currentRow); // Método anterior
+    //$currentRow += count($mainData); // Ajuste de currentRow ya se hace en el bucle
+    
     if (isset($options['totals'])) {
         $sheet->fromArray($options['totals'], null, 'A'.$currentRow);
-        $sheet->getStyle('A'.$currentRow.':' . $sheet->getHighestColumn() . $currentRow)->getFont()->setBold(true);
+        $sheet->getStyle('A'.$currentRow.':' . \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($mainHeaders)) . $currentRow)->getFont()->setBold(true);
     }
 
-    // Secondary Sheet
     if ($reportType === 'customer' && !empty($options['top_customers'])) {
         $top10Sheet = $spreadsheet->createSheet();
         $top10Sheet->setTitle('Top 10');
-        // Headers and data for Top 10
         $top10Sheet->setCellValue('A1', 'Tienda:')->getStyle('A1')->getFont()->setBold(true);
         $top10Sheet->setCellValue('B1', $reportHeader['shop_name']);
         $top10Sheet->setCellValue('A2', 'Informe:')->getStyle('A2')->getFont()->setBold(true);
@@ -260,12 +358,13 @@ function exportToXlsx($reportType, $reportHeader, $mainHeaders, $mainData, $opti
         $top10Headers = ['ID Cliente', 'Nombre', 'Total Comprado'];
         $top10Sheet->fromArray($top10Headers, null, 'A4');
         $top10Sheet->getStyle('A4:C4')->getFont()->setBold(true);
-        $top10Sheet->fromArray($options['top_customers'], null, 'A5');
+         // Asegurar formato correcto para los datos
+         $topCustomersFormatted = array_map(function($c){ return [$c[0], $c[1], $c[2]]; }, $options['top_customers']);
+        $top10Sheet->fromArray($topCustomersFormatted, null, 'A5');
     }
     if ($reportType === 'brand' && !empty($options['brand_summary'])) {
         $summarySheet = $spreadsheet->createSheet();
         $summarySheet->setTitle('Totales por marca');
-        // Headers and data for Brand Summary
         $summarySheet->setCellValue('A1', 'Tienda:')->getStyle('A1')->getFont()->setBold(true);
         $summarySheet->setCellValue('B1', $reportHeader['shop_name']);
         $summarySheet->setCellValue('A2', 'Informe:')->getStyle('A2')->getFont()->setBold(true);
@@ -275,12 +374,12 @@ function exportToXlsx($reportType, $reportHeader, $mainHeaders, $mainData, $opti
         $summarySheet->getStyle('A4:E4')->getFont()->setBold(true);
         $brandData = [];
         foreach($options['brand_summary'] as $brand => $summary) {
-            $brandData[] = array_merge([$brand], $summary);
+             // Asegurar el orden correcto de las columnas
+             $brandData[] = [$brand, $summary['cost'], $summary['sale_excl'], $summary['sale_incl'], $summary['profit']];
         }
         $summarySheet->fromArray($brandData, null, 'A5');
     }
 
-    // Auto-size columns for all sheets
     foreach ($spreadsheet->getAllSheets() as $worksheet) {
         foreach (range('A', $worksheet->getHighestColumn()) as $columnID) {
             $worksheet->getColumnDimension($columnID)->setAutoSize(true);
@@ -296,11 +395,10 @@ function exportToXlsx($reportType, $reportHeader, $mainHeaders, $mainData, $opti
     $writer->save('php://output');
 }
 
+
 // --- 6. FUNCIÓN PRINCIPAL QUE EJECUTA LA LÓGICA ---
 function generarInforme() {
     $reportType = $_POST['report_type'];
-    $startDate = $_POST['start_date'] . ' 00:00:00';
-    $endDate = $_POST['end_date'] . ' 23:59:59';
     $outputFormat = $_POST['output_format'];
 
     try {
@@ -308,10 +406,132 @@ function generarInforme() {
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     } catch (PDOException $e) { die("Error de conexión: " . $e->getMessage()); }
 
-    $params = [':startDate' => $startDate, ':endDate' => $endDate];
+    $params = [];
     $data = []; $options = []; $headers = []; $reportName = "";
+    $reportHeader = ['shop_name' => SHOP_NAME];
+
+    if ($reportType === 'supplier') {
+        $supplierId = $_POST['supplier_id'];
+        $params[':supplierId'] = $supplierId;
+    } 
+    else if ($reportType === 'low_stock') {
+        $stockThreshold = (int)$_POST['stock_threshold'];
+        $params[':stockThreshold'] = $stockThreshold;
+        $reportHeader['stock_threshold'] = $stockThreshold;
+    } 
+    else {
+        $startDate = $_POST['start_date'] . ' 00:00:00';
+        $endDate = $_POST['end_date'] . ' 23:59:59';
+        $params[':startDate'] = $startDate;
+        $params[':endDate'] = $endDate;
+        $reportHeader['start_date'] = $_POST['start_date'];
+        $reportHeader['end_date'] = $_POST['end_date'];
+    }
 
     switch ($reportType) {
+        
+        case 'low_stock':
+            $reportName = "Informe de Existencias Bajas";
+            // Usamos los alias de la consulta SQL como cabeceras directamente
+            $headers = ['ID producto', 'ID combinación', 'Nombre del producto', 'Referencia', 'Precio unitario', 'Fabricante', 'Proveedor', 'Stock'];
+            
+            // --- INICIO DE LA CONSULTA SQL CORREGIDA (v2) ---
+            $sql = "
+                (SELECT
+                    p.id_product AS `ID producto`,
+                    0 AS `ID combinación`,
+                    pl.name COLLATE utf8mb4_unicode_ci AS `Nombre del producto`,
+                    p.reference COLLATE utf8mb4_unicode_ci AS `Referencia`,
+                    p.price AS `Precio unitario`,
+                    m.name COLLATE utf8mb4_unicode_ci AS `Fabricante`,
+                    -- Seleccionar proveedor por defecto si existe, si no, buscar en product_supplier
+                    COALESCE(s_default.name, s_assoc.name) COLLATE utf8mb4_unicode_ci AS `Proveedor`, 
+                    sa.quantity AS `Stock`
+                FROM
+                    " . DB_PREFIX . "product p
+                LEFT JOIN
+                    " . DB_PREFIX . "product_attribute pa ON p.id_product = pa.id_product
+                JOIN
+                    " . DB_PREFIX . "product_lang pl ON (p.id_product = pl.id_product AND pl.id_lang = 1)
+                JOIN
+                    " . DB_PREFIX . "stock_available sa ON (p.id_product = sa.id_product AND sa.id_product_attribute = 0 AND sa.id_shop = 1)
+                LEFT JOIN
+                    " . DB_PREFIX . "manufacturer m ON (p.id_manufacturer = m.id_manufacturer)
+                LEFT JOIN 
+                    " . DB_PREFIX . "supplier s_default ON (p.id_supplier = s_default.id_supplier AND p.id_supplier > 0) -- Proveedor por defecto
+                LEFT JOIN 
+                    " . DB_PREFIX . "product_supplier ps ON (p.id_product = ps.id_product AND p.id_supplier = 0) -- Solo si no hay por defecto
+                 LEFT JOIN 
+                    " . DB_PREFIX . "supplier s_assoc ON (ps.id_supplier = s_assoc.id_supplier) -- Nombre del proveedor asociado
+                WHERE
+                    sa.quantity <= :stockThreshold
+                    AND pa.id_product_attribute IS NULL
+                GROUP BY p.id_product -- Agrupamos por si hay multiples proveedores en product_supplier
+                )
+                
+                UNION ALL
+                
+                (SELECT
+                    p.id_product AS `ID producto`,
+                    pa.id_product_attribute AS `ID combinación`,
+                    CONCAT(pl.name, ' - ', GROUP_CONCAT(DISTINCT agl.name, ': ', al.name SEPARATOR ', ')) COLLATE utf8mb4_unicode_ci AS `Nombre del producto`,
+                    IF(pa.reference IS NOT NULL AND pa.reference != '', pa.reference, p.reference) COLLATE utf8mb4_unicode_ci AS `Referencia`,
+                    (p.price + pa.price) AS `Precio unitario`, -- Nota: Precio puede ser más complejo con reglas de catálogo
+                    m.name COLLATE utf8mb4_unicode_ci AS `Fabricante`,
+                    -- Misma lógica para proveedor en combinaciones
+                    COALESCE(s_default.name, s_assoc.name) COLLATE utf8mb4_unicode_ci AS `Proveedor`,
+                    sa.quantity AS `Stock`
+                FROM
+                    " . DB_PREFIX . "product p
+                JOIN
+                    " . DB_PREFIX . "product_lang pl ON (p.id_product = pl.id_product AND pl.id_lang = 1)
+                JOIN
+                    " . DB_PREFIX . "product_attribute pa ON (p.id_product = pa.id_product)
+                JOIN
+                    " . DB_PREFIX . "product_attribute_combination pac ON (pa.id_product_attribute = pac.id_product_attribute)
+                JOIN
+                    " . DB_PREFIX . "attribute a ON (pac.id_attribute = a.id_attribute)
+                JOIN
+                    " . DB_PREFIX . "attribute_lang al ON (a.id_attribute = al.id_attribute AND al.id_lang = 1)
+                JOIN
+                    " . DB_PREFIX . "attribute_group_lang agl ON (a.id_attribute_group = agl.id_attribute_group AND agl.id_lang = 1)
+                JOIN
+                    " . DB_PREFIX . "stock_available sa ON (pa.id_product_attribute = sa.id_product_attribute AND sa.id_shop = 1)
+                LEFT JOIN
+                    " . DB_PREFIX . "manufacturer m ON (p.id_manufacturer = m.id_manufacturer)
+                 LEFT JOIN 
+                    " . DB_PREFIX . "supplier s_default ON (p.id_supplier = s_default.id_supplier AND p.id_supplier > 0) -- Proveedor por defecto del producto base
+                LEFT JOIN 
+                    " . DB_PREFIX . "product_supplier ps ON (p.id_product = ps.id_product AND p.id_supplier = 0) -- Solo si no hay por defecto
+                 LEFT JOIN 
+                    " . DB_PREFIX . "supplier s_assoc ON (ps.id_supplier = s_assoc.id_supplier) -- Nombre del proveedor asociado
+                WHERE
+                    sa.quantity <= :stockThreshold
+                GROUP BY
+                    pa.id_product_attribute
+                )
+                
+                ORDER BY
+                    `Nombre del producto`, `ID combinación`;
+            ";
+            // --- FIN DE LA CONSULTA SQL CORREGIDA (v2) ---
+            
+            $stmt = $pdo->prepare($sql); $stmt->execute($params); $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            break;
+
+        case 'supplier':
+            $reportName = "Productos por Proveedor";
+            $headers = ['Id Producto', 'Nombre producto', 'Referencia', 'Precio unitario', 'Existencias'];
+            $sql = "SELECT p.id_product, pl.name, p.reference, p.price AS unit_price, sa.quantity AS stock FROM " . DB_PREFIX . "product p JOIN " . DB_PREFIX . "product_lang pl ON (p.id_product = pl.id_product AND pl.id_lang = 1) JOIN " . DB_PREFIX . "product_supplier ps ON (p.id_product = ps.id_product) LEFT JOIN " . DB_PREFIX . "stock_available sa ON (p.id_product = sa.id_product AND sa.id_product_attribute = 0 AND sa.id_shop = 1) WHERE ps.id_supplier = :supplierId GROUP BY p.id_product ORDER BY pl.name ASC;";
+            
+            $suppStmt = $pdo->prepare("SELECT name FROM " . DB_PREFIX . "supplier WHERE id_supplier = :supplierId");
+            $suppStmt->execute([':supplierId' => $params[':supplierId']]);
+            $supplierName = $suppStmt->fetchColumn();
+            $reportName = "Productos del Proveedor: " . $supplierName;
+            
+            $stmt = $pdo->prepare($sql); $stmt->execute($params); $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            break;
+            
         case 'brand':
             $reportName = "Informe de Ventas por Marca";
             $headers = ['ID Producto', 'Nombre Producto', 'Marca', 'Cantidad', 'Precio Coste', 'Precio Venta (s/IVA)', 'Precio Venta (c/IVA)', 'Beneficio'];
@@ -357,13 +577,21 @@ function generarInforme() {
             break;
     }
 
-    $reportHeader = ['shop_name' => SHOP_NAME, 'report_name' => $reportName, 'start_date' => $_POST['start_date'], 'end_date' => $_POST['end_date']];
+    $reportHeader['report_name'] = $reportName;
 
     switch ($outputFormat) {
         case 'csv':
+            // Asegurar que los headers coincidan con las claves de $data
+             if (!empty($data)) {
+                 $headers = array_keys($data[0]);
+             }
             exportToCsv($reportType, $reportHeader, $headers, $data, $options);
             break;
         case 'xlsx':
+             // Asegurar que los headers coincidan con las claves de $data
+             if (!empty($data)) {
+                 $headers = array_keys($data[0]);
+             }
             exportToXlsx($reportType, $reportHeader, $headers, $data, $options);
             break;
     }
